@@ -28,8 +28,7 @@ def get_harmonized(composite_img,mask_img):
 
     with torch.no_grad():
         arguments = harmonizer.predict_arguments(comp, mask)
-        harmonized = harmonizer.restore_image(comp, mask, arguments)[-1]
+        harmonized = harmonizer.restore_image(comp, mask, arguments)
 
-    harmonized = np.transpose(harmonized[0].cpu().numpy(), (1, 2, 0)) * 255
-    harmonized = Image.fromarray(harmonized.astype(np.uint8))
-    harmonized.save('harmonized.jpg')
+    output_img = tf.to_pil_image(_harmonized.squeeze())
+    output_img.save('harmonized.jpg')

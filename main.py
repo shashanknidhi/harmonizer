@@ -21,7 +21,7 @@ def get_harmonized(composite_img,mask_img):
     harmonizer = model.Harmonizer()
     if cuda:
         harmonizer = harmonizer.cuda()
-    harmonizer.load_state_dict('pretrained/harmonizer.pth', strict=True)
+    harmonizer.load_state_dict(torch.load('pretrained/harmonizer.pth'), strict=True)
     if cuda:
         comp = comp.cuda()
         mask = mask.cuda()

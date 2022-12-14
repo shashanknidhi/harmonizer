@@ -6,29 +6,30 @@ import torch
 import torch.nn.functional as F
 import torchvision.transforms.functional as tf
 from src import model
-def get_harmonized(composite_image,fg_mask,save_dir='harmonized'):
+def get_harmonized(composite_img,mask_img):
+    comp = Image.open(composite_img).convert('RGB')
+    mask = Image.open(mask_img).convert('1')
+    if comp.size[0] != mask.size[0] or comp.size[1] != mask.size[1]:
+        print('The size of the composite image and the mask are inconsistent')
+    # convert to tensor
+    comp = tf.to_tensor(comp)[None, ...]
+    mask = tf.to_tensor(mask)[None, ...]
+    # pre-defined arguments
     cuda = torch.cuda.is_available()
+    
+    
     harmonizer = model.Harmonizer()
     if cuda:
-        harmonizer.load_state_dict(torch.load('pretrained/harmonizer.pth', map_location=torch.device('cuda')), strict=True)
         harmonizer = harmonizer.cuda()
-    else:
-        harmonizer.load_state_dict(torch.load('pretrained/harmonizer.pth', map_location=torch.device('cpu')), strict=True)
-    harmonizer.eval()
-    _comp = tf.to_tensor(composite_image)[None, ...]
-    _mask = tf.to_tensor(fg_mask)[None, ...]
-    _comp = _comp.cuda()
-    _mask = _mask.cuda()
+    harmonizer.load_state_dict('pretrained/harmonizer.pth', strict=True)
+    if cuda:
+        comp = comp.cuda()
+        mask = mask.cuda()
+
     with torch.no_grad():
-        arguments = harmonizer.predict_arguments(_comp, _mask)
-        _harmonized = harmonizer.restore_image(_comp, _mask, arguments)
+        arguments = harmonizer.predict_arguments(comp, mask)
+        harmonized = harmonizer.restore_image(comp, mask, arguments)[-1]
 
-    output_img = tf.to_pil_image(_harmonized.squeeze())
-    if not os.path.exists(save_dir):
-        os.mkdir(save_dir)
-    output_img.save(os.path.join(save_dir, 'harmonized.jpg'))
-
-if __name__ == '__main__':
-    composite_image = Image.open('data/composite.jpg')
-    fg_mask = Image.open('data/fg_mask.jpg')
-    get_harmonized(composite_image,fg_mask)
+    harmonized = np.transpose(harmonized[0].cpu().numpy(), (1, 2, 0)) * 255
+    harmonized = Image.fromarray(harmonized.astype(np.uint8))
+    harmonized.save('harmonized.jpg')

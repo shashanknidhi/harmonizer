@@ -30,5 +30,5 @@ def get_harmonized(composite_img,mask_img):
         arguments = harmonizer.predict_arguments(comp, mask)
         harmonized = harmonizer.restore_image(comp, mask, arguments)
 
-    output_img = tf.to_pil_image(_harmonized.squeeze())
+    output_img = tf.to_pil_image(harmonized.squeeze())
     output_img.save('harmonized.jpg')
